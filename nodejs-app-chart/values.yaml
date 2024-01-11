@@ -1,0 +1,8 @@
+# Deployment
+deployName: nodejs-app-deploy
+namespace: default
+container_image: joska99/node-app:latest
+
+# Service
+serviceName: nodejs-app-service
+type: NodePort
