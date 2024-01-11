@@ -1,8 +1,7 @@
 pipeline {
-    agent any
-    // {
-    //     label 'agent1'
-    // }
+    agent {
+        label 'agent1'
+    }
     environment {
         IMG_NAME_APP = 'node-app'
         DOCKER_REPO = 'joska99'
