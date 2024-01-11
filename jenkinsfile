@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    // {
+    //     label 'agent1'
+    // }
+    environment {
+        IMG_NAME_APP = 'node-app'
+        DOCKER_REPO = 'joska99'
+        VERSION = '1.0.0'
+    }
+    stages {
+        stage('Docker Build Latest and Version') {
+            steps {
+                sh "sudo docker build -t ${DOCKER_REPO}/${IMG_NAME_APP}:${VERSION} ."
+                sh "sudo docker build -t ${DOCKER_REPO}/${IMG_NAME_APP}:latest ."
+            }
+        }
+        stage('Push to Dockerhub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DockerHub-LG', \
+                passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
+                    script {
+                        // login
+                        sh "echo ${PSWD} | sudo docker login -u ${LOGIN} --password-stdin"
+                        // push app img
+                        sh "sudo docker push ${DOCKER_REPO}/${IMG_NAME_APP}:${VERSION}"
+                        sh "sudo docker push ${DOCKER_REPO}/${IMG_NAME_APP}:latest"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                sh 'sudo docker kill $(sudo docker ps -q)'
+                sh 'yes | sudo docker container prune'
+            }
+        }
+    }
+}
