@@ -6,6 +6,8 @@ pipeline {
         IMG_NAME_APP = 'node-app'
         DOCKER_REPO = 'joska99'
         VERSION = '1.0.0'
+        // EC2 private IP addr
+        PROD_HOST = 'ubuntu@172.31.27.166'
     }
     stages {
         stage('Docker Build Latest and Version') {
@@ -35,6 +37,15 @@ pipeline {
                     sh "echo ${PSWD} | helm registry login docker.io -u ${LOGIN} --password-stdin"
                     sh 'helm package ./nodejs-app-chart/'
                     sh "helm push nodejs-app-chart-0.1.0.tgz oci://docker.io/${DOCKER_REPO}"
+                }
+            }
+        }
+        stage('CD - Deploy') {
+            steps {
+                withCredentials([file(credentialsId: 'ec2_minikube_production', variable: 'secret')]) {
+                    script {
+                        sh "ssh -o StrictHostKeyChecking=no -i ${secret}  ${PROD_HOST} helm install app  oci://registry-1.docker.io/joska99/nodejs-app-chart"
+                    }
                 }
             }
         }
