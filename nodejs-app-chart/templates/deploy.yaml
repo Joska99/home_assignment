@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ .Values.deployName }}"
-  namespace: "{{ .Values.namespace }}"
+  name: {{ .Values.deployment.name }}
+  namespace: {{ .Values.deployment.namespace }}
 # Define ReplicaSet
 spec:
-  replicas: 3
+  replicas: {{ .Values.deployment.replicas }}
   # Deployment strategy "rolling update"
   strategy:
     type: RollingUpdate
@@ -25,8 +25,8 @@ spec:
     # Define Container in Pod
     spec:
       containers:
-        - name: "{{ .Chart.Name }}"
-          image: "{{ .Values.container_image }}"
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.deployment.container_image }}
           # Define resources limits for container
           resources:
             # Scrap metrics
@@ -36,4 +36,7 @@ spec:
               memory: "128Mi"
               cpu: "500m"
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.deployment.container_port }}
+      # Secret to pull from ECR
+      imagePullSecrets:
+        - name: ecr

@@ -5,15 +5,18 @@ WORKDIR /app
 
 COPY ./node_js_app/ /app/
 
-RUN npm install
+RUN npm install 
 
 
 # Stage 2
 FROM node:alpine3.18
 
-WORKDIR /app
+WORKDIR /home/node/app
 
-COPY --from=builder /app /app
+# User for securit
+USER node
+
+COPY --from=builder /app /home/node//app
 
 EXPOSE 8000
 

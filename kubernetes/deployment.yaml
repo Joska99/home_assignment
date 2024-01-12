@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: joska99/node-app:latest
+          image: 564115879819.dkr.ecr.us-east-1.amazonaws.com/docker-nodejs:latest
           # Define resources limits for container
           resources:
             # Scrap metrics
@@ -36,3 +36,5 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 8000
+      imagePullSecrets:
+        - name: ecr

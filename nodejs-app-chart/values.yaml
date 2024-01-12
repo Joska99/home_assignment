@@ -1,8 +1,15 @@
 # Deployment
-deployName: nodejs-app-deploy
-namespace: default
-container_image: joska99/node-app:latest
+deployment:
+  name: nodejs-app-deploy
+  namespace: default
+  replicas: 3
+  container_image: 564115879819.dkr.ecr.us-east-1.amazonaws.com/docker-nodejs:latest
+  container_port: 8000
 
 # Service
-serviceName: nodejs-app-service
-type: NodePort
+service:
+  name: nodejs-app-service
+  type: NodePort
+  port: 8000
+  targetPort: 8000
+  nodePort: 32000

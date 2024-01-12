@@ -1,53 +1,102 @@
 pipeline {
+
+
+    // TODO: USE JENKINS TOOLS DOCKER AND HELM
+    // TODO: split CI and CD
+    // TODO: CREATE UBUNTU IMAGE TO USE AS AGENT
+
+
     agent {
         label 'agent1'
     }
     environment {
-        IMG_NAME_APP = 'node-app'
-        DOCKER_REPO = 'joska99'
+        // Docker
+        IMG_NAME_APP = 'docker-nodejs'
         VERSION = '1.0.0'
+        // Helm
+        HELM_PACKAGE_DIR = './nodejs-app-chart/'
+        HELM_PACKAGE = 'nodejs-app-chart-0.1.0.tgz'
+        HELM_REPO = 'nodejs-app-chart'
         // EC2 private IP addr
         PROD_HOST = 'ubuntu@172.31.27.166'
     }
     stages {
-        stage('Docker Build Latest and Version') {
+        stage('Docker Build') {
             steps {
-                sh "sudo docker build -t ${DOCKER_REPO}/${IMG_NAME_APP}:${VERSION} ."
-                sh "sudo docker build -t ${DOCKER_REPO}/${IMG_NAME_APP}:latest ."
-            }
-        }
-        stage('Push to Dockerhub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'DockerHub-LG', \
-                passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
+                withCredentials([
+                    string(credentialsId: 'ecr-registry', variable: 'URL')
+                ]) {
                     script {
-                        // login
-                        sh "echo ${PSWD} | sudo docker login -u ${LOGIN} --password-stdin"
-                        // push app img
-                        sh "sudo docker push ${DOCKER_REPO}/${IMG_NAME_APP}:${VERSION}"
-                        sh "sudo docker push ${DOCKER_REPO}/${IMG_NAME_APP}:latest"
+                            sh "sudo docker build -t ${URL}/${IMG_NAME_APP}:${VERSION} ."
+                            sh "sudo docker build -t ${URL}/${IMG_NAME_APP}:latest ."
                     }
                 }
             }
         }
-        stage('Create Helm login,package and push to DockerHub') {
+        stage('Docker image push to ECR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DockerHub-LG', \
-                passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
-                    sh "echo ${PSWD} | helm registry login docker.io -u ${LOGIN} --password-stdin"
-                    sh 'helm package ./nodejs-app-chart/'
-                    sh "helm push nodejs-app-chart-0.1.0.tgz oci://docker.io/${DOCKER_REPO}"
+                withCredentials([
+                    usernamePassword(credentialsId: 'ecr-user-pswd', passwordVariable: 'PSWD', usernameVariable: 'USER'),
+                    string(credentialsId: 'ecr-registry', variable: 'URL')
+                ]) {
+                    script {
+                            // login to ECR regestry
+                            sh "echo ${PSWD} | sudo docker login --username ${USER} --password-stdin ${URL}"
+                            // TODO: MAKE PUSH COMMIT HASH
+                            sh "sudo docker push ${URL}/${IMG_NAME_APP}:${VERSION}"
+                            // push app img with tag latest
+                            sh "sudo docker push ${URL}/${IMG_NAME_APP}:latest"
+                    }
                 }
             }
         }
-        stage('CD - Deploy') {
+        stage('Helm package push to ECR') {
             steps {
-                withCredentials([file(credentialsId: 'ec2_minikube_production', variable: 'secret')]) {
+                withCredentials([
+                    usernamePassword(credentialsId: 'ecr-user-pswd', passwordVariable: 'PSWD', usernameVariable: 'USER'),
+                    string(credentialsId: 'ecr-registry', variable: 'URL')
+                ]) {
+                    // Login to ECR regestry
+                    sh "echo ${PSWD} | helm registry login --username ${USER} --password-stdin oci://${URL}"
+                    // Package Helm chart
+                    sh "helm package ${HELM_PACKAGE_DIR}"
+                    // Push Helm chart to regestry
+                    sh "helm push ${HELM_PACKAGE} oci://${URL}"
+                }
+            }
+        }
+        stage('CD - Deploy to Minikube') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'ec2_minikube_production', variable: 'secret'),
+                    string(credentialsId: 'ecr-registry', variable: 'URL')
+                ]) {
                     script {
-                        sh "ssh -o StrictHostKeyChecking=no -i ${secret}  ${PROD_HOST} helm install app  oci://registry-1.docker.io/joska99/nodejs-app-chart"
+                        // TODO: CREATE IF FOR HELM UPDATE
+                        // Connect to EC2 with Minikube cluster to deploy Helm
+                        sh "ssh -o StrictHostKeyChecking=no -i ${secret}  ${PROD_HOST} helm install app  oci://${URL}/${HELM_REPO}"
                     }
                 }
             }
         }
     }
+    post {
+        always {
+            script {
+                // Clean
+                sh 'rm -rf ${HELM_PAKAGE}'
+                sh 'ls'
+            }
+        }
+        // TODO: ADD NOTIFY TO SLACK
+        // success {
+        //     sh "echo Success!!"
+        //     // slackSend color: '#36a64f', message: 'Deployment of myapp to production succeeded!'
+        // }
+        // failure {
+        //     sh "echo Failure!!"
+        //     // slackSend color: '#ff0000', message: 'Deployment of myapp to production failed!'
+        // }
+    }
 }
+
