@@ -10,7 +10,6 @@ pipeline {
         HELM_PACKAGE_DIR = './nodejs-app-chart/'
         HELM_PACKAGE = 'nodejs-app-chart-0.1.0.tgz'
         HELM_REPO = 'nodejs-app-chart'
-        HELM_VERSION = '0.1.0'
         // EC2 private IP addr
         PROD_HOST = 'ubuntu@172.31.27.166'
     }
@@ -68,14 +67,12 @@ pipeline {
             steps {
                 withCredentials([
                     file(credentialsId: 'ec2_minikube_production', variable: 'SECRET'),
-                    usernamePassword(credentialsId: 'ecr-user-pswd', passwordVariable: 'PSWD', usernameVariable: 'USER'),
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
                         // Connect to EC2 with Minikube cluster to deploy Helm
                         sh '''
-                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" echo "$PSWD" | helm registry login --username "$USER" --password-stdin "$URL"
-                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO/$HELM_VERSION"
+                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO"
                         '''
                     }
                 }
@@ -86,7 +83,7 @@ pipeline {
         always {
             script {
                 // Clean
-                sh 'rm -rf $HELM_PAKAGE'
+                sh 'rm -rf $HELM_PACKAGE'
                 sh 'ls -lah'
             }
         }
