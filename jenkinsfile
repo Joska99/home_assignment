@@ -1,5 +1,4 @@
 pipeline {
-    // TODO: USE JENKINS TOOLS DOCKER AND HELM
     agent {
         label 'agent1'
     }
@@ -69,6 +68,7 @@ pipeline {
             steps {
                 withCredentials([
                     file(credentialsId: 'ec2_minikube_production', variable: 'SECRET'),
+                    usernamePassword(credentialsId: 'ecr-user-pswd', passwordVariable: 'PSWD', usernameVariable: 'USER'),
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
@@ -86,7 +86,7 @@ pipeline {
         always {
             script {
                 // Clean
-                sh 'rm -rf "$HELM_PAKAGE"'
+                sh 'rm -rf $HELM_PAKAGE'
                 sh 'ls -lah'
             }
         }

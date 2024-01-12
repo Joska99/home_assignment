@@ -1,6 +1,4 @@
-<h1> Deployment of Python Flask app </h1>
-
-
+<h1> Jenkins CI/CD - Deploy Helm package to Minikube </h1>
 
 <h2>Description</h2>
 
@@ -15,10 +13,8 @@ Jenkins run job on agent, Build Docker image and push to Private ECR, creates He
 - Jenkins controller+agent
 - Provide secret to Jenkins ec2_minikube_production (secret file), ecr-registry (secret String), ecr-user-pswd (secret String) 
 - GitHub repository
-- Implement Feature Branching strategy "Develop -> main"
+- Implement Feature Branching strategy "Feature -> main"
 - Connect and Configure WebHook on Pull Request to main
 - Private ECR
 - Instance with Minikube 
-
-
 
