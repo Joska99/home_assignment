@@ -27,8 +27,10 @@ pipeline {
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
-                            sh "sudo docker build -t ${URL}/${IMG_NAME_APP}:${VERSION} ."
-                            sh "sudo docker build -t ${URL}/${IMG_NAME_APP}:latest ."
+                            sh '''
+                                sudo docker build -t "$URL/$IMG_NAME_APP:$VERSION" .
+                                sudo docker build -t "$URL/$IMG_NAME_APP:latest" .
+                            '''
                     }
                 }
             }
@@ -40,12 +42,14 @@ pipeline {
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
-                            // login to ECR regestry
-                            sh "echo ${PSWD} | sudo docker login --username ${USER} --password-stdin ${URL}"
                             // TODO: MAKE PUSH COMMIT HASH
-                            sh "sudo docker push ${URL}/${IMG_NAME_APP}:${VERSION}"
+                            // login to ECR regestry
                             // push app img with tag latest
-                            sh "sudo docker push ${URL}/${IMG_NAME_APP}:latest"
+                            sh '''
+                                echo "$PSWD" | sudo docker login --username "$USER" --password-stdin "$URL"
+                                sudo docker push "$URL/$IMG_NAME_APP:$VERSION"
+                                sudo docker push "$URL/$IMG_NAME_APP:latest"
+                            '''
                     }
                 }
             }
@@ -57,24 +61,28 @@ pipeline {
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     // Login to ECR regestry
-                    sh "echo ${PSWD} | helm registry login --username ${USER} --password-stdin oci://${URL}"
                     // Package Helm chart
-                    sh "helm package ${HELM_PACKAGE_DIR}"
                     // Push Helm chart to regestry
-                    sh "helm push ${HELM_PACKAGE} oci://${URL}"
+                    sh '''
+                        echo "$PSWD" | helm registry login --username "$USER" --password-stdin "$URL"
+                        helm package "$HELM_PACKAGE_DIR"
+                        helm push "$HELM_PACKAGE" "oci://$URL"
+                    '''
                 }
             }
         }
         stage('CD - Deploy to Minikube') {
             steps {
                 withCredentials([
-                    file(credentialsId: 'ec2_minikube_production', variable: 'secret'),
+                    file(credentialsId: 'ec2_minikube_production', variable: 'SECRER'),
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
                         // TODO: CREATE IF FOR HELM UPDATE
                         // Connect to EC2 with Minikube cluster to deploy Helm
-                        sh "ssh -o StrictHostKeyChecking=no -i ${secret}  ${PROD_HOST} helm install app  oci://${URL}/${HELM_REPO}"
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO"
+                        '''
                     }
                 }
             }
@@ -84,8 +92,8 @@ pipeline {
         always {
             script {
                 // Clean
-                sh 'rm -rf ${HELM_PAKAGE}'
-                sh 'ls'
+                sh 'rm -rf "$HELM_PAKAGE"'
+                sh 'ls -lah'
             }
         }
         // TODO: ADD NOTIFY TO SLACK
