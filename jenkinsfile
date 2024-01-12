@@ -4,6 +4,7 @@ pipeline {
     // TODO: USE JENKINS TOOLS DOCKER AND HELM
     // TODO: split CI and CD
     // TODO: CREATE UBUNTU IMAGE TO USE AS AGENT
+    // TODO: MAKE PUSH COMMIT HASH
 
 
     agent {
@@ -17,6 +18,7 @@ pipeline {
         HELM_PACKAGE_DIR = './nodejs-app-chart/'
         HELM_PACKAGE = 'nodejs-app-chart-0.1.0.tgz'
         HELM_REPO = 'nodejs-app-chart'
+        HELM_VERSION = '0.1.0'
         // EC2 private IP addr
         PROD_HOST = 'ubuntu@172.31.27.166'
     }
@@ -42,7 +44,6 @@ pipeline {
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
-                            // TODO: MAKE PUSH COMMIT HASH
                             // login to ECR regestry
                             // push app img with tag latest
                             sh '''
@@ -74,14 +75,13 @@ pipeline {
         stage('CD - Deploy to Minikube') {
             steps {
                 withCredentials([
-                    file(credentialsId: 'ec2_minikube_production', variable: 'SECRER'),
+                    file(credentialsId: 'ec2_minikube_production', variable: 'SECRET'),
                     string(credentialsId: 'ecr-registry', variable: 'URL')
                 ]) {
                     script {
-                        // TODO: CREATE IF FOR HELM UPDATE
                         // Connect to EC2 with Minikube cluster to deploy Helm
                         sh '''
-                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO"
+                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO/$HELM_VERSION"
                         '''
                     }
                 }
