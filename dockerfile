@@ -1,5 +1,5 @@
 # Stage 1
-FROM node:alpine3.18 as builder
+FROM node:21.5 as builder
 
 WORKDIR /app
 
@@ -13,10 +13,10 @@ FROM node:alpine3.18
 
 WORKDIR /home/node/app
 
-# User for securit
+# User for security
 USER node
 
-COPY --from=builder /app /home/node//app
+COPY --from=builder /app /home/node/app
 
 EXPOSE 8000
 

@@ -72,7 +72,7 @@ pipeline {
                     script {
                         // Connect to EC2 with Minikube cluster to deploy Helm
                         sh '''
-                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm install app  "oci://$URL/$HELM_REPO"
+                            ssh -o StrictHostKeyChecking=no -i "$SECRET"  "$PROD_HOST" helm upgrade  app  "oci://$URL/$HELM_REPO" --install
                         '''
                     }
                 }
