@@ -8,20 +8,20 @@ spec:
   replicas: {{ .Values.deployment.replicas }}
   # Deployment strategy "rolling update"
   strategy:
-    type: RollingUpdate
+    type: {{ .Values.deployment.strategy_type }}
     rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
+      maxSurge: {{ .Values.deployment.max_surge }}
+      maxUnavailable: {{ .Values.deployment.max_unavailable }}
   # Match Pods with this label
   selector:
     matchLabels:
-      app: nodejs-app
+      app: {{ .Values.deployment.match_labels }}
   # Define Pod template for ReplicaSet
   template:
     metadata:
       # Label to match to ReplicaSet
       labels:
-        app: nodejs-app
+        app: {{ .Values.deployment.pod_label }}
     # Define Container in Pod
     spec:
       containers:
@@ -31,12 +31,14 @@ spec:
           resources:
             # Scrap metrics
             requests:
-              cpu: 200m
+              cpu: {{ .Values.deployment.request_cpu }}
             limits:
-              memory: "128Mi"
-              cpu: "500m"
+              memory: {{ .Values.deployment.limit_memory }}
+              cpu: {{ .Values.deployment.limit_cpu }}
           ports:
             - containerPort: {{ .Values.deployment.container_port }}
       # Secret to pull from ECR
       imagePullSecrets:
-        - name: ecr
+        - name: {{ .Values.deployment.deployment_secret }}
+      # To pull Always
+      imagePullPolicy: {{ .Values.deployment.pull_policy }}

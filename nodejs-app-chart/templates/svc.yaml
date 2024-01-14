@@ -6,7 +6,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: nodejs-app
+    app: {{ .Values.service.selector }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}

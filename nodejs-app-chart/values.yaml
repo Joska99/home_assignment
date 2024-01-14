@@ -3,13 +3,24 @@ deployment:
   name: nodejs-app-deploy
   namespace: default
   replicas: 3
+  strategy_type: RollingUpdate
+  max_surge: 1
+  max_unavailable: 1
+  match_labels: nodejs-app
+  pod_label: nodejs-app
   container_image: 564115879819.dkr.ecr.us-east-1.amazonaws.com/docker-nodejs:latest
   container_port: 8000
+  request_cpu: 200m
+  limit_memory: "128Mi"
+  limit_cpu: "500m"
+  deployment_secret: ecr
+  pull_policy: Always
 
 # Service
 service:
   name: nodejs-app-service
   type: NodePort
+  selector: nodejs-app
   port: 8000
   targetPort: 8000
   nodePort: 32000
